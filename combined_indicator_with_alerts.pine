@@ -1,0 +1,42 @@
+//@version=5
+strategy("Combined Indicator Strategy", overlay=true, initial_capital=1000, default_qty_type=strategy.percent_of_equity, default_qty_value=10)
+
+// === Indicator 1: Buy and Sell Signal (example logic) ===
+rsi = ta.rsi(close, 14)
+buy_signal = ta.crossover(rsi, 30)
+sell_signal = ta.crossunder(rsi, 70)
+
+// === Indicator 2: Market Trend (example logic) ===
+ema_fast = ta.ema(close, 50)
+ema_slow = ta.ema(close, 200)
+trend_up = ema_fast > ema_slow
+trend_down = ema_fast < ema_slow
+
+// === Combined Entry Conditions ===
+long_entry = buy_signal and trend_up
+short_entry = sell_signal and trend_down
+
+// === ATR-based Stop Loss and Take Profit ===
+atr = ta.atr(14)
+long_stop = close - atr * 1.0
+long_tp = close + atr * 2.0
+short_stop = close + atr * 1.0
+short_tp = close - atr * 2.0
+
+if (long_entry)
+    strategy.entry("Long", strategy.long)
+    strategy.exit("Long Exit", "Long", stop=long_stop, limit=long_tp)
+
+if (short_entry)
+    strategy.entry("Short", strategy.short)
+    strategy.exit("Short Exit", "Short", stop=short_stop, limit=short_tp)
+
+// === Plotting for Visual Reference ===
+plot(ema_fast, color=color.orange, linewidth=2, title="EMA 50")
+plot(ema_slow, color=color.blue, linewidth=2, title="EMA 200")
+plotshape(long_entry, title="BUY Arrow", location=location.belowbar, color=color.green, style=shape.triangleup, size=size.normal)
+plotshape(short_entry, title="SELL Arrow", location=location.abovebar, color=color.red, style=shape.triangledown, size=size.normal)
+
+// === WEBHOOK ALERTS FOR EMAIL NOTIFICATIONS ===
+alertcondition(long_entry, title="LONG Entry Signal", message='{"key": "gaby_trading_secret_2025", "symbol": "{{ticker}}", "action": "LONG ENTRY", "price": {{close}}, "rsi": "' + str.tostring(rsi, "#.##") + '"}')
+alertcondition(short_entry, title="SHORT Entry Signal", message='{"key": "gaby_trading_secret_2025", "symbol": "{{ticker}}", "action": "SHORT ENTRY", "price": {{close}}, "rsi": "' + str.tostring(rsi, "#.##") + '"}')
