@@ -54,28 +54,25 @@ def webhook():
             raw_message = request.data.decode('utf-8')
             data = {'message': raw_message}
         
-        # Extract message - could be JSON or plain text
+        # Check webhook secret for security
+        webhook_key = data.get('key')
+        if webhook_key != WEBHOOK_SECRET:
+            logging.warning(f"Invalid webhook key: {webhook_key}")
+            return jsonify({'error': 'Invalid key'}), 401
+        
+        # Extract message - handle the new clean format
         if 'message' in data:
-            # Plain text message from TradingView
+            # New clean format: "Symbol: AAPL Action: BUY Price: 150.00"
             message_content = data['message']
             subject = f"🚨 TradingView Alert"
         else:
-            # JSON message with structured data
+            # Fallback: JSON message with structured data
             symbol = data.get('symbol', data.get('ticker', 'UNKNOWN'))
             signal = data.get('signal', data.get('action', 'SIGNAL'))
             price = data.get('price', data.get('close', 'N/A'))
             
             subject = f"🚨 {signal} {symbol}"
-            message_content = f"""
-Trading Signal Alert!
-
-Symbol: {symbol}
-Signal: {signal}
-Price: {price}
-Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-
-Raw data: {data}
-"""
+            message_content = f"Symbol: {symbol} Action: {signal} Price: {price}"
         
         # Send notification
         send_email(subject, message_content)

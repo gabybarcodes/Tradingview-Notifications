@@ -38,5 +38,5 @@ plotshape(long_entry, title="BUY Arrow", location=location.belowbar, color=color
 plotshape(short_entry, title="SELL Arrow", location=location.abovebar, color=color.red, style=shape.triangledown, size=size.normal)
 
 // === WEBHOOK ALERTS FOR EMAIL NOTIFICATIONS ===
-alertcondition(long_entry, title="LONG Entry Signal", message='{"key": "gaby_trading_secret_2025", "symbol": "{{ticker}}", "action": "LONG ENTRY", "price": {{close}}, "rsi": "' + str.tostring(rsi, "#.##") + '"}')
-alertcondition(short_entry, title="SHORT Entry Signal", message='{"key": "gaby_trading_secret_2025", "symbol": "{{ticker}}", "action": "SHORT ENTRY", "price": {{close}}, "rsi": "' + str.tostring(rsi, "#.##") + '"}')
+alertcondition(long_entry, title="LONG Entry Signal", message='{"key": "gaby_trading_secret_2025", "message": "Symbol: {{ticker}} Action: BUY Price: {{close}}"}')
+alertcondition(short_entry, title="SHORT Entry Signal", message='{"key": "gaby_trading_secret_2025", "message": "Symbol: {{ticker}} Action: SELL Price: {{close}}"}')
