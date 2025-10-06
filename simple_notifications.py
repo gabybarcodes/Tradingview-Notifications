@@ -42,6 +42,19 @@ def send_email(subject, message):
     except Exception as e:
         logging.error(f"Email failed: {e}")
 
+@app.route('/', methods=['GET'])
+def home():
+    """Home page"""
+    return jsonify({
+        'status': 'running',
+        'service': 'TradingView Notification System v2.0',
+        'endpoints': {
+            'test': '/test',
+            'webhook': '/webhook (POST)',
+            'status': '/status'
+        }
+    })
+
 @app.route('/webhook', methods=['POST'])
 def webhook():
     """Receive TradingView signals"""
