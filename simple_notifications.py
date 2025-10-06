@@ -22,7 +22,7 @@ EMAIL_PASSWORD = os.environ.get('EMAIL_PASSWORD', "hmvk pacd qhui dbme")
 SEND_TO_EMAIL = os.environ.get('SEND_TO_EMAIL', "gabytrad3r@gmail.com")
 
 def send_email(subject, message):
-    """Send email notification"""
+    """Send email notification with timeout protection"""
     print(f"📧 EMAIL NOTIFICATION:")
     print(f"   To: {SEND_TO_EMAIL}")
     print(f"   Subject: {subject}")
@@ -30,28 +30,44 @@ def send_email(subject, message):
     
     # Check if email is configured
     if not EMAIL_USER or not EMAIL_PASSWORD or not SEND_TO_EMAIL:
-        print(f"📧 Email not configured - printing to console instead:")
-        logging.info(f"Console notification: {subject} - {message}")
+        print(f"📧 Email not configured - logging instead")
+        logging.info(f"NOTIFICATION: {subject} - {message}")
         return
     
     try:
+        # Use shorter timeout to prevent worker timeout
+        import socket
+        socket.setdefaulttimeout(10)  # 10 second timeout
+        
         msg = MIMEText(message)
         msg['Subject'] = subject
         msg['From'] = EMAIL_USER
         msg['To'] = SEND_TO_EMAIL
         
-        with smtplib.SMTP('smtp.gmail.com', 587) as server:
+        # Quick connection with timeout
+        with smtplib.SMTP('smtp.gmail.com', 587, timeout=10) as server:
             server.starttls()
             server.login(EMAIL_USER, EMAIL_PASSWORD)
             server.sendmail(EMAIL_USER, SEND_TO_EMAIL, msg.as_string())
         
-        logging.info(f"✅ Email sent successfully: {subject}")
-        print(f"✅ Email sent successfully to {SEND_TO_EMAIL}")
+        logging.info(f"✅ Email sent: {subject}")
+        print(f"✅ Email sent successfully!")
+        
+    except socket.timeout:
+        error_msg = f"⏰ Email timeout - Gmail connection too slow"
+        print(error_msg)
+        logging.warning(error_msg)
+        logging.info(f"BACKUP NOTIFICATION: {subject} - {message}")
+        
     except Exception as e:
-        logging.error(f"❌ Email failed: {e}")
-        print(f"❌ Email failed: {e}")
-        # Log to console as backup
-        logging.info(f"Backup notification: {subject} - {message}")
+        error_msg = f"❌ Email failed: {str(e)}"
+        print(error_msg)
+        logging.warning(error_msg)
+        logging.info(f"BACKUP NOTIFICATION: {subject} - {message}")
+        
+    finally:
+        # Reset timeout
+        socket.setdefaulttimeout(None)
 
 @app.route('/', methods=['GET'])
 def home():
