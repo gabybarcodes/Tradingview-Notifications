@@ -4,8 +4,8 @@ Receives signals from TradingView and sends notifications
 """
 
 from flask import Flask, request, jsonify
-import smtplib
-from email.mime.text import MIMEText
+import requests
+import json
 from datetime import datetime
 import logging
 import os
@@ -17,57 +17,60 @@ app = Flask(__name__)
 
 # Configuration - Uses environment variables from Railway
 WEBHOOK_SECRET = os.environ.get('WEBHOOK_SECRET', "gaby_trading_secret_2025")
-EMAIL_USER = os.environ.get('EMAIL_USER', "gabytrad3r@gmail.com")
-EMAIL_PASSWORD = os.environ.get('EMAIL_PASSWORD', "hmvk pacd qhui dbme")
-SEND_TO_EMAIL = os.environ.get('SEND_TO_EMAIL', "gabytrad3r@gmail.com")
+DISCORD_WEBHOOK_URL = os.environ.get('DISCORD_WEBHOOK_URL', "")
+EMAIL_USER = os.environ.get('EMAIL_USER', "gabytrad3r@gmail.com")  # Keep for reference
+SEND_TO_EMAIL = os.environ.get('SEND_TO_EMAIL', "gabytrad3r@gmail.com")  # Keep for reference
 
-def send_email(subject, message):
-    """Send email notification with timeout protection"""
-    print(f"📧 EMAIL NOTIFICATION:")
-    print(f"   To: {SEND_TO_EMAIL}")
+def send_discord_notification(subject, message):
+    """Send notification to Discord webhook"""
+    print(f"🎮 DISCORD NOTIFICATION:")
     print(f"   Subject: {subject}")
     print(f"   Message: {message}")
     
-    # Check if email is configured
-    if not EMAIL_USER or not EMAIL_PASSWORD or not SEND_TO_EMAIL:
-        print(f"📧 Email not configured - logging instead")
+    if not DISCORD_WEBHOOK_URL:
+        print(f"🎮 Discord not configured - logging instead")
         logging.info(f"NOTIFICATION: {subject} - {message}")
         return
     
     try:
-        # Use shorter timeout to prevent worker timeout
-        import socket
-        socket.setdefaulttimeout(10)  # 10 second timeout
+        # Create Discord embed (fancy message)
+        embed = {
+            "title": f"🚨 {subject}",
+            "description": message,
+            "color": 0x00ff00 if "BUY" in message else 0xff0000 if "SELL" in message else 0x0099ff,
+            "timestamp": datetime.now().isoformat(),
+            "footer": {"text": "TradingView Alert System"}
+        }
         
-        msg = MIMEText(message)
-        msg['Subject'] = subject
-        msg['From'] = EMAIL_USER
-        msg['To'] = SEND_TO_EMAIL
+        payload = {
+            "content": f"**{subject}**",
+            "embeds": [embed]
+        }
         
-        # Quick connection with timeout
-        with smtplib.SMTP('smtp.gmail.com', 587, timeout=10) as server:
-            server.starttls()
-            server.login(EMAIL_USER, EMAIL_PASSWORD)
-            server.sendmail(EMAIL_USER, SEND_TO_EMAIL, msg.as_string())
+        # Send to Discord with short timeout
+        response = requests.post(
+            DISCORD_WEBHOOK_URL, 
+            json=payload, 
+            timeout=5
+        )
         
-        logging.info(f"✅ Email sent: {subject}")
-        print(f"✅ Email sent successfully!")
-        
-    except socket.timeout:
-        error_msg = f"⏰ Email timeout - Gmail connection too slow"
+        if response.status_code == 204:
+            logging.info(f"✅ Discord notification sent: {subject}")
+            print(f"✅ Discord notification sent successfully!")
+        else:
+            logging.warning(f"⚠️ Discord response: {response.status_code}")
+            
+    except requests.RequestException as e:
+        error_msg = f"❌ Discord notification failed: {str(e)}"
         print(error_msg)
         logging.warning(error_msg)
         logging.info(f"BACKUP NOTIFICATION: {subject} - {message}")
         
     except Exception as e:
-        error_msg = f"❌ Email failed: {str(e)}"
+        error_msg = f"❌ Unexpected error: {str(e)}"
         print(error_msg)
         logging.warning(error_msg)
         logging.info(f"BACKUP NOTIFICATION: {subject} - {message}")
-        
-    finally:
-        # Reset timeout
-        socket.setdefaulttimeout(None)
 
 @app.route('/', methods=['GET'])
 def home():
@@ -115,7 +118,7 @@ def webhook():
             message_content = f"Symbol: {symbol} Action: {signal} Price: {price}"
         
         # Send notification
-        send_email(subject, message_content)
+        send_discord_notification(subject, message_content)
         
         # Also show on console
         print(f"\n🚨 ALERT: {subject}")
@@ -141,7 +144,7 @@ System Status: ✅ WORKING
 Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 """
     
-    send_email(subject, message)
+    send_discord_notification(subject, message)
     
     return jsonify({'message': 'Test notification sent!'})
 
@@ -150,7 +153,7 @@ def status():
     """Get system status"""
     return jsonify({
         'status': 'running',
-        'email_configured': bool(EMAIL_USER and EMAIL_PASSWORD and SEND_TO_EMAIL),
+        'discord_configured': bool(DISCORD_WEBHOOK_URL),
         'email_user': EMAIL_USER,
         'webhook_url': 'http://localhost/webhook',
         'test_url': 'http://localhost/test'
