@@ -3,11 +3,19 @@ import os
 
 app = Flask(__name__)
 
-@app.route('/')
+@app.route('/', methods=['GET'])
 def home():
-    return "TradingView Notification System is running!"
+    return jsonify({
+        'status': 'success',
+        'message': 'TradingView Notification System is running!',
+        'environment': 'Railway',
+        'endpoints': {
+            'test': '/test',
+            'webhook': '/webhook'
+        }
+    })
 
-@app.route('/test')
+@app.route('/test', methods=['GET'])
 def test():
     return jsonify({
         'status': 'success',
@@ -15,9 +23,11 @@ def test():
         'environment': 'Railway'
     })
 
-@app.route('/webhook', methods=['POST'])
+@app.route('/webhook', methods=['POST', 'GET'])
 def webhook():
-    return jsonify({'status': 'webhook received'})
+    if request.method == 'GET':
+        return jsonify({'status': 'webhook endpoint ready', 'method': 'use POST'})
+    return jsonify({'status': 'webhook received', 'data': request.get_json()})
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5001))
