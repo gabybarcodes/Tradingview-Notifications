@@ -51,9 +51,8 @@ def send_discord_notification(subject, message):
 @app.route('/', methods=['GET'])
 def home():
     return jsonify({
- s  ' :   ' runnin g''','
-, ' 
-      'service': 'TradingView Discord Notification System',
+        'status': 'running',
+        'service': 'TradingView Discord Notification System',
         'discord_configured': bool(DISCORD_WEBHOOK_URL),
         'webhook_url': 'https://web-production-cbdc9.up.railway.app/webhook'
     })
