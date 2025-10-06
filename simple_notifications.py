@@ -15,11 +15,11 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 
 app = Flask(__name__)
 
-# Configuration - CHANGE THESE
-WEBHOOK_SECRET = "gaby_trading_secret_2025"  # Change this to your secret
-EMAIL_USER = "gabytrad3r@gmail.com"  # Your email (e.g., "your_email@gmail.com")
-EMAIL_PASSWORD = "hmvk pacd qhui dbme"  # Your email app password
-SEND_TO_EMAIL = "gabytrad3r@gmail.com"  # Where to send notifications
+# Configuration - Uses environment variables from Railway
+WEBHOOK_SECRET = os.environ.get('WEBHOOK_SECRET', "gaby_trading_secret_2025")
+EMAIL_USER = os.environ.get('EMAIL_USER', "gabytrad3r@gmail.com")
+EMAIL_PASSWORD = os.environ.get('EMAIL_PASSWORD', "hmvk pacd qhui dbme")
+SEND_TO_EMAIL = os.environ.get('SEND_TO_EMAIL', "gabytrad3r@gmail.com")
 
 def send_email(subject, message):
     """Send email notification"""
