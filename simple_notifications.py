@@ -1,6 +1,6 @@
 """
-Simple TradingView Buy/Sell Notification System
-Receives signals from TradingView and sends notifications
+TradingView Buy/Sell Notification System
+Receives signals from TradingView and sends email notifications
 """
 
 from flask import Flask, request, jsonify
