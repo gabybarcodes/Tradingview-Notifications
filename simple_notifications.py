@@ -117,11 +117,12 @@ def status():
     })
 
 if __name__ == '__main__':
-    print("=== TradingView Notification System ===")
+    print("=== TradingView Notification System v2.0 ===")
     print("1. Update EMAIL_USER, EMAIL_PASSWORD, SEND_TO_EMAIL")
     print("2. Change WEBHOOK_SECRET to something secure")
     print("3. Use webhook URL: http://localhost:5001/webhook")
     print("4. Test URL: http://localhost:5001/test")
+    print("5. Railway deployment active!")
     print("==========================================")
     
     # Use Railway's PORT environment variable or default to 5001
