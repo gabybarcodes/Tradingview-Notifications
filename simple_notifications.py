@@ -48,6 +48,18 @@ def send_discord_notification(subject, message):
         print(f"❌ Discord error: {e}")
         return False
 
+@app.before_request
+def log_all_requests():
+    """Log every single request to help debug TradingView calls"""
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    print(f"\n📨 REQUEST at {timestamp}")
+    print(f"Method: {request.method}")
+    print(f"Path: {request.path}")
+    print(f"Remote IP: {request.remote_addr}")
+    print(f"User-Agent: {request.headers.get('User-Agent', 'Unknown')}")
+    if request.data:
+        print(f"Data: {request.data}")
+
 @app.route('/', methods=['GET'])
 def home():
     return jsonify({
@@ -59,6 +71,13 @@ def home():
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
+    # Log every webhook call
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    print(f"\n🔔 WEBHOOK CALL at {timestamp}")
+    print(f"Headers: {dict(request.headers)}")
+    print(f"Content-Type: {request.content_type}")
+    print(f"Raw Data: {request.data}")
+    
     try:
         if request.content_type == 'application/json':
             data = request.get_json()
@@ -66,11 +85,17 @@ def webhook():
             raw_message = request.data.decode('utf-8')
             data = {'message': raw_message}
         
+        print(f"Parsed Data: {data}")
+        
         provided_key = data.get('key', '')
+        print(f"Key check: provided='{provided_key}' vs expected='{WEBHOOK_SECRET}'")
+        
         if provided_key != WEBHOOK_SECRET:
+            print("❌ INVALID KEY!")
             return jsonify({'error': 'Invalid key'}), 401
         
         alert_message = data.get('message', 'No message provided')
+        print(f"Alert Message: {alert_message}")
         
         subject = "TradingView Alert"
         if 'BUY' in alert_message.upper():
@@ -85,7 +110,9 @@ def webhook():
 🕐 **Time:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 """
         
+        print(f"Sending Discord notification: {subject}")
         success = send_discord_notification(subject, formatted_message)
+        print(f"Discord notification result: {success}")
         
         return jsonify({
             'status': 'success', 
