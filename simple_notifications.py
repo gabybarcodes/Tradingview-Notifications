@@ -153,6 +153,77 @@ def status():
         'webhook_secret_configured': bool(WEBHOOK_SECRET)
     })
 
+@app.route('/tradingview', methods=['POST'])
+def tradingview_webhook():
+    """Special endpoint that accepts ANY TradingView format"""
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    print(f"\n🚨 TRADINGVIEW WEBHOOK at {timestamp}")
+    print(f"Headers: {dict(request.headers)}")
+    print(f"Content-Type: {request.content_type}")
+    print(f"Raw Data: {request.data}")
+    print(f"Form Data: {dict(request.form)}")
+    print(f"Args: {dict(request.args)}")
+    
+    try:
+        # Try multiple ways to get the data
+        message = ""
+        
+        if request.content_type == 'application/json':
+            data = request.get_json()
+            print(f"JSON Data: {data}")
+            message = data.get('message', str(data))
+        elif request.form:
+            print(f"Form Data: {dict(request.form)}")
+            message = str(dict(request.form))
+        else:
+            message = request.data.decode('utf-8')
+            print(f"Raw Message: {message}")
+        
+        # Send to Discord regardless of format
+        subject = "🔔 TradingView Direct"
+        formatted_message = f"""🚨 **TRADINGVIEW ALERT** 🚨
+
+{message}
+
+🕐 **Time:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+"""
+        
+        success = send_discord_notification(subject, formatted_message)
+        print(f"Discord sent: {success}")
+        
+        return jsonify({
+            'status': 'received',
+            'message': message,
+            'discord_sent': success
+        })
+        
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/simple', methods=['POST'])
+def simple_webhook():
+    """Ultra-simple webhook - accepts anything and sends to Discord"""
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    print(f"\n💚 SIMPLE WEBHOOK at {timestamp}")
+    print(f"Data: {request.data}")
+    
+    try:
+        # Get any data in any format
+        if request.data:
+            message = request.data.decode('utf-8')
+        else:
+            message = "Empty webhook call"
+        
+        # Send directly to Discord
+        success = send_discord_notification("🟢 Simple Alert", message)
+        
+        return "OK"
+        
+    except Exception as e:
+        print(f"❌ Simple webhook error: {e}")
+        return "ERROR"
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
